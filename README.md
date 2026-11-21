@@ -1,65 +1,70 @@
-# 🎂 Kuchupuchu Birthday Website
+# 🥀 Kuchupuchu · Birthday
 
-A tiny, mobile-friendly birthday surprise site. No build step, no dependencies —
-just HTML + CSS + JS. Pink + rose gold, Hinglish words, zero voice/audio.
+A cinematic, scroll-driven birthday site — dark wine, cream and rose gold,
+film grain, full-bleed photos, first-person Hinglish words. No voice, no audio,
+no build step.
 
-## 1. Photos add karo
+**Live:** https://aanirudra78.github.io/kuchupuchu-birthday/
 
-1. Apni photos `assets/photos/` folder mein drop karo (jpg/png/webp — any names).
-2. Gallery refresh karne ke liye chalao:
+## 1. Photos add karo (10–15 best photos)
+
+1. `assets/photos/` mein photos drop karo (jpg / png / webp).
+2. Folder mein terminal khol ke chalao:
 
 ```bash
 node list-photos.js
 ```
 
-Ye `photos-data.js` banata hai (auto-generated) — gallery khud update ho jayegi.
-Photos ka order alphabetical/numeric hota hai (`2.jpg` se pehle `10.jpg` nahi).
+Ye `photos-data.js` regenerate karta hai. Page refresh — cover, chapters,
+reel aur ending sab automatically bhar jayenge.
 
-> Photos abhi nahi hain to gallery cute placeholders dikhati hai.
+> Photo order alphabetical/numeric hai (`01.jpg`, `02.jpg` … best).
+> Photos nahi hain to elegant dark placeholders dikhte hain.
 
-## 2. Words badlo
+## 2. Words badlo (first person)
 
-Sab text ek hi jagah hai: **`config.js`**
-- `name`, `emojis`, `from`
-- `dob`, `birthday`, `age`
-- `tagline`, `reasons`, `captions`, `letter`, `giftMessage`
+Sab kuch **`config.js`** mein hai:
+- `name`, `from`, `dob`, `birthday`, `age`
+- `coverKicker`, `coverLine`
+- `intro.lines` — shuruaat ki baatein
+- `chapters` — scroll wali 5 lines (photos ke saath)
+- `reasons` — 10 lines
+- `wish` — cake section
+- `letter` — poori chitthi
+- `ending` — last screen
+- `captions` + `photoFocus` — photo captions aur face framing
 
-Badal ke page refresh karo — bas.
+`photoFocus` mein `"center 30%"` type values se portrait photos ka chehra
+frame mein rehta hai.
 
 ## 3. Local dekhna
 
 ```bash
-# option A: seedha index.html open karo (double-click)
-# option B: chhota server (recommended)
 npx serve .
-# ya
-python -m http.server 8000
+# ya seedha index.html double-click
 ```
 
-## 4. Online link (GitHub Pages)
+## 4. Online update (GitHub Pages)
 
 ```bash
-git init
 git add .
-git commit -m "birthday site"
-gh repo create kuchupuchu-birthday --public --source=. --remote=origin --push
-gh api repos/Aanirudra78/kuchupuchu-birthday/pages -X POST \
-  -f source='{"branch":"main","path":"/"}'
+git commit -m "photos + new design"
+git push
 ```
 
-Link: `https://aanirudra78.github.io/kuchupuchu-birthday/`
-(Pages ko 1–2 minute lagte hain. ⚠️ Free Pages par repo public hona padta hai.)
+Pages 1–2 minute mein update ho jaata hai.
+Link: **https://aanirudra78.github.io/kuchupuchu-birthday/**
 
-Agar pehle se repo exist kare to `git remote add origin ...` + `git push -u origin main`.
+> ⚠️ Free GitHub Pages par repo public hota hai — link jiske paas hai wahi dekh sakta hai.
 
 ## Files
 
 | File | Kaam |
 |---|---|
-| `index.html` | saare sections |
-| `styles.css` | theme, layout, animations |
-| `script.js` | cake, gift, envelope, gallery, lightbox, particles |
-| `config.js` | 👈 saare words yahin |
-| `photos-data.js` | auto-generated photo list (edit mat karo) |
-| `list-photos.js` | photos scan karke `photos-data.js` banata hai |
-| `assets/photos/` | 👈 photos yahan drop karo |
+| `index.html` | structure |
+| `styles.css` | cinematic theme + animations |
+| `script.js` | scroll story, reel, cake, letter, lightbox, particles |
+| `config.js` | 👈 saare words / details |
+| `photos-data.js` | auto-generated photo list |
+| `list-photos.js` | photos scan → `photos-data.js` |
+| `assets/photos/` | 👈 photos yahan |
