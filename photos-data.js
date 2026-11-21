@@ -192,5 +192,13 @@ window.BIRTHDAY_PHOTOS = [
     "group": "double",
     "caption": "",
     "alt": "Hum dono"
+  },
+  {
+    "file": "assets/video/v01.mp4",
+    "group": "double",
+    "type": "video",
+    "poster": "assets/video/v01.jpg",
+    "caption": "",
+    "alt": "Hum dono"
   }
 ];

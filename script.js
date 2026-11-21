@@ -453,6 +453,7 @@
      ============================================================ */
   const slideA = $("slideA");
   const slideB = $("slideB");
+  const videoEl = $("slideVideo");
   let slideIndex = 0;
   let slideTimer = null;
   let usingA = true;
@@ -460,18 +461,77 @@
 
   function preloadAll() {
     ordered.forEach((p) => {
+      const src = p.type === "video" ? p.poster : p.file;
+      if (!src) return;
       const im = new Image();
-      im.src = p.file;
+      im.src = src;
     });
+  }
+
+  function updateSlideMeta(i, item) {
+    const label = $("photoLabel");
+    const count = $("photoCount");
+    const bar = $("photoBar");
+    const labels = cfg.labels || { single: "Tum", double: "Hum dono" };
+    if (label) label.textContent = item.group === "double" ? labels.double : labels.single;
+    if (count) count.textContent = `${String(i + 1).padStart(2, "0")} / ${String(ordered.length).padStart(2, "0")}`;
+    if (bar) bar.style.width = `${(((i + 1) / ordered.length) * 100).toFixed(2)}%`;
+  }
+
+  function playVideoSlide(item) {
+    clearInterval(slideTimer);
+    if (slideA) slideA.classList.remove("is-active");
+    if (slideB) slideB.classList.remove("is-active");
+    if (!videoEl) { showFinal(); return; }
+
+    videoEl.hidden = false;
+    videoEl.poster = item.poster || "";
+    videoEl.src = item.file;
+    try { videoEl.currentTime = 0; } catch (e) {}
+
+    const setRatio = () => {
+      const frameEl = $("photoFrame");
+      if (frameEl && videoEl.videoWidth) {
+        const ar = Math.max(0.6, Math.min(1.78, videoEl.videoWidth / videoEl.videoHeight));
+        frameEl.style.aspectRatio = ar.toFixed(3);
+      }
+    };
+    if (videoEl.readyState >= 1) setRatio();
+    else videoEl.addEventListener("loadedmetadata", setRatio, { once: true });
+
+    // song ko halka kar do taaki video ki apni awaaz sunai de
+    if (rangAudio && rangStarted) fadeAudio(rangAudio, 0.12, 500);
+
+    const p = videoEl.play();
+    if (p && p.catch) p.catch(() => {});
+    videoEl.onended = () => showFinal();
   }
 
   function showPhoto(i) {
     const item = ordered[i];
     if (!item) return;
+
+    const frame = $("photoFrame");
+    const stageEl = document.querySelector(".stage--photos");
+    const backdrop = item.type === "video" ? (item.poster || "") : item.file;
+    if (frame && backdrop) frame.style.setProperty("--bgimg", `url("${backdrop}")`);
+    if (stageEl && backdrop) stageEl.style.setProperty("--stagebg", `url("${backdrop}")`);
+
+    updateSlideMeta(i, item);
+
+    if (item.type === "video") {
+      playVideoSlide(item);
+      return;
+    }
+
+    if (videoEl) {
+      videoEl.pause();
+      videoEl.hidden = true;
+      videoEl.removeAttribute("src");
+    }
+
     const incoming = usingA ? slideB : slideA;
     const outgoing = usingA ? slideA : slideB;
-    const frame = $("photoFrame");
-    if (frame) frame.style.setProperty("--bgimg", `url("${item.file}")`);
 
     incoming.classList.remove("is-active");
     incoming.style.transition = "none";
@@ -490,19 +550,9 @@
       if (!frameEl || !incoming.naturalWidth) return;
       const ar = Math.max(0.6, Math.min(1.5, incoming.naturalWidth / incoming.naturalHeight));
       frameEl.style.aspectRatio = ar.toFixed(3);
-      const stageEl = document.querySelector(".stage--photos");
-      if (stageEl) stageEl.style.setProperty("--stagebg", `url("${item.file}")`);
     };
     if (incoming.complete) { fit(); requestAnimationFrame(swap); }
     else incoming.onload = () => { incoming.onload = null; fit(); requestAnimationFrame(swap); };
-
-    const label = $("photoLabel");
-    const count = $("photoCount");
-    const bar = $("photoBar");
-    const labels = cfg.labels || { single: "Tum", double: "Hum dono" };
-    if (label) label.textContent = item.group === "double" ? labels.double : labels.single;
-    if (count) count.textContent = `${String(i + 1).padStart(2, "0")} / ${String(ordered.length).padStart(2, "0")}`;
-    if (bar) bar.style.width = `${(((i + 1) / ordered.length) * 100).toFixed(2)}%`;
   }
 
   function startSlideshow() {
@@ -522,6 +572,12 @@
     usingA = true;
     if (slideA) { slideA.classList.remove("is-active"); slideA.removeAttribute("src"); }
     if (slideB) { slideB.classList.remove("is-active"); slideB.removeAttribute("src"); }
+    if (videoEl) {
+      videoEl.pause();
+      videoEl.hidden = true;
+      videoEl.removeAttribute("src");
+      videoEl.onended = null;
+    }
 
     showPhoto(0);
     clearInterval(slideTimer);
@@ -538,6 +594,7 @@
 
   function showFinal() {
     clearInterval(slideTimer);
+    if (videoEl) { videoEl.pause(); videoEl.hidden = true; }
     stopRang();
     showStage("final");
     setTimeout(() => burst(window.innerWidth / 2, window.innerHeight * 0.45, 70), 350);

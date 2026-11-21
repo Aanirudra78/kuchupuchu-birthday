@@ -11,6 +11,7 @@ const OUT_JS = path.join(ROOT, "photos-data.js");
 const OUT_JSON = path.join(ROOT, "photos.json");
 
 const EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"]);
+const VIDEO_EXT = new Set([".mp4", ".webm", ".mov"]);
 const GROUPS = ["single", "double"];
 
 const natural = (a, b) =>
@@ -37,6 +38,28 @@ function run() {
   let entries = [];
   for (const g of GROUPS) entries = entries.concat(scan(g, g));
 
+  // videos in assets/video/ play at the very end
+  const videoDir = path.join(ROOT, "assets", "video");
+  if (fs.existsSync(videoDir)) {
+    const vids = fs
+      .readdirSync(videoDir)
+      .filter((f) => VIDEO_EXT.has(path.extname(f).toLowerCase()))
+      .sort(natural)
+      .map((f) => {
+        const base = f.replace(/\.[^.]+$/, "");
+        const poster = path.join(videoDir, `${base}.jpg`);
+        return {
+          file: `assets/video/${f}`,
+          group: "double",
+          type: "video",
+          poster: fs.existsSync(poster) ? `assets/video/${base}.jpg` : "",
+          caption: "",
+          alt: "Hum dono",
+        };
+      });
+    entries = entries.concat(vids);
+  }
+
   // backward compatible: images sitting directly in assets/photos/
   if (!entries.length) {
     entries = fs
@@ -57,8 +80,9 @@ function run() {
   fs.writeFileSync(OUT_JSON, JSON.stringify(entries, null, 2) + "\n", "utf8");
 
   const single = entries.filter((e) => e.group === "single").length;
-  const double = entries.filter((e) => e.group === "double").length;
-  console.log(`single: ${single} · double: ${double} · total: ${entries.length}`);
+  const double = entries.filter((e) => e.group === "double" && e.type !== "video").length;
+  const videos = entries.filter((e) => e.type === "video").length;
+  console.log(`single: ${single} · double: ${double} · videos: ${videos} · total: ${entries.length}`);
   entries.forEach((e, i) => console.log(`  ${i + 1}. [${e.group}] ${e.file}`));
 }
 

@@ -574,6 +574,16 @@ body[data-stage="final"] .sidewall { opacity: 0.45; }
 .photo-frame img.is-active {
   opacity: 1;
 }
+.photo-frame video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: transparent;
+  z-index: 1;
+  border-radius: 10px;
+}
 
 .photo-progress {
   width: min(92vw, calc(70svh * 0.75), 540px);
