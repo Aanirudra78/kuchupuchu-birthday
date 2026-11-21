@@ -505,13 +505,28 @@ body[data-stage="final"] .sidewall { opacity: 0.45; }
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: clamp(14px, 3.2vh, 28px);
+  gap: clamp(10px, 2.4vh, 22px);
+  padding: clamp(12px, 3vw, 28px);
+  overflow: hidden;
+}
+.stage--photos::before {
+  content: "";
+  position: absolute;
+  inset: -60px;
+  background-image: var(--stagebg, none);
+  background-size: cover;
+  background-position: center;
+  filter: blur(46px) saturate(1.15) brightness(1.02);
+  opacity: 0.5;
+  z-index: -1;
+  pointer-events: none;
+  transition: opacity 0.7s var(--ease);
 }
 .photo-top {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  width: min(86vw, calc(62svh * 0.75), 460px);
+  width: min(92vw, calc(70svh * 0.75), 540px);
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.24em;
@@ -522,7 +537,7 @@ body[data-stage="final"] .sidewall { opacity: 0.45; }
 
 .photo-frame {
   position: relative;
-  width: min(86vw, calc(62svh * 0.75), 460px);
+  width: min(92vw, calc(70svh * 0.75), 540px);
   aspect-ratio: 3 / 4;
   transition: aspect-ratio 0.55s var(--ease);
   border-radius: 22px;
@@ -530,7 +545,7 @@ body[data-stage="final"] .sidewall { opacity: 0.45; }
   background: #ffe3ee;
   border: 9px solid var(--cream);
   box-shadow: var(--shadow-lg);
-  transform: rotate(-1.6deg);
+  transform: rotate(-1.2deg);
 }
 .photo-frame::before {
   content: "";
@@ -561,7 +576,7 @@ body[data-stage="final"] .sidewall { opacity: 0.45; }
 }
 
 .photo-progress {
-  width: min(86vw, calc(62svh * 0.75), 460px);
+  width: min(92vw, calc(70svh * 0.75), 540px);
   height: 4px;
   border-radius: 999px;
   background: rgba(201, 85, 127, 0.16);
@@ -690,8 +705,8 @@ body[data-stage="final"] .sidewall { opacity: 0.45; }
 @media (max-height: 700px) {
   .wish-title { font-size: clamp(1.9rem, 7vw, 3rem); margin-bottom: 20px; }
   .cake { transform: scale(0.9); margin-bottom: 18px; }
-  .photo-frame { width: min(82vw, calc(56svh * 0.75), 420px); }
-  .photo-top, .photo-progress { width: min(82vw, calc(56svh * 0.75), 420px); }
+  .photo-frame { width: min(92vw, calc(58svh * 0.75), 460px); }
+  .photo-top, .photo-progress { width: min(92vw, calc(58svh * 0.75), 460px); }
 }
 
 /* ============================================================

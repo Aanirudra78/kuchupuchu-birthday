@@ -488,8 +488,10 @@
     const fit = () => {
       const frameEl = $("photoFrame");
       if (!frameEl || !incoming.naturalWidth) return;
-      const ar = Math.max(0.66, Math.min(1.5, incoming.naturalWidth / incoming.naturalHeight));
+      const ar = Math.max(0.6, Math.min(1.5, incoming.naturalWidth / incoming.naturalHeight));
       frameEl.style.aspectRatio = ar.toFixed(3);
+      const stageEl = document.querySelector(".stage--photos");
+      if (stageEl) stageEl.style.setProperty("--stagebg", `url("${item.file}")`);
     };
     if (incoming.complete) { fit(); requestAnimationFrame(swap); }
     else incoming.onload = () => { incoming.onload = null; fit(); requestAnimationFrame(swap); };
