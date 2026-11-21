@@ -1,0 +1,9 @@
+{
+  "name": "kuchupuchu-birthday",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A tiny birthday website for Kuchupuchu",
+  "scripts": {
+    "photos": "node list-photos.js"
+  }
+}

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#fff3f6" />
+  <title>Happy Birthday Kuchupuchu 🥰💗✨</title>
+  <meta name="description" content="Ek chhota sa birthday surprise — Kuchupuchu ke liye, 22.11.2026" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- floating hearts / confetti -->
+  <canvas id="fx" aria-hidden="true"></canvas>
+  <div class="page-glow" aria-hidden="true"></div>
+
+  <!-- ============ HERO ============ -->
+  <header class="hero" id="top">
+    <div class="hero-orb hero-orb--a" aria-hidden="true"></div>
+    <div class="hero-orb hero-orb--b" aria-hidden="true"></div>
+    <div class="hero-orb hero-orb--c" aria-hidden="true"></div>
+
+    <div class="hero-inner">
+      <p class="eyebrow" data-delay="0.05">A LITTLE SURPRISE · JUST FOR YOU</p>
+      <h1 class="hero-title" data-delay="0.12"><span>Happy</span><span>Birthday</span></h1>
+      <h2 class="hero-name" data-delay="0.22">
+        <span id="heroName">Kuchupuchu</span> <span class="hero-emojis" id="heroEmojis">🥰💗✨</span>
+      </h2>
+      <p class="hero-line" id="heroTagline" data-delay="0.32">Tumhari muskaan, meri sabse pasandida cheez.</p>
+
+      <div class="hero-badges" data-delay="0.42">
+        <span class="badge badge--age"><b id="heroAge">19</b><small>today</small></span>
+        <span class="badge" id="heroDob">22 · 11 · 2007</span>
+      </div>
+
+      <a class="scroll-cue" href="#wish" data-delay="0.55">
+        <span>thoda neeche</span>
+        <span class="scroll-cue__arrow">↓</span>
+      </a>
+    </div>
+
+    <div class="hero-hearts" aria-hidden="true">
+      <span style="--x:8%;--y:74%;--d:0s;--s:.9;--r:-12deg">💗</span>
+      <span style="--x:86%;--y:22%;--d:1.2s;--s:1.1;--r:14deg">💖</span>
+      <span style="--x:78%;--y:80%;--d:2.1s;--s:.75;--r:8deg">✨</span>
+      <span style="--x:16%;--y:32%;--d:.7s;--s:.7;--r:-8deg">🩷</span>
+      <span style="--x:92%;--y:56%;--d:1.8s;--s:.85;--r:18deg">💕</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- ============ WISH / CAKE ============ -->
+    <section class="section wish" id="wish">
+      <div class="section-head reveal">
+        <span class="kicker">01 · MAKE A WISH</span>
+        <h2>Pehle candle bujhao 🎂</h2>
+        <p class="sub" id="wishSub">19 candles, 19 saal, aur ek hi wish — tumhari khushi.</p>
+      </div>
+
+      <div class="cake-wrap reveal">
+        <div class="cake" id="cake" aria-label="Birthday cake with candles">
+          <div class="cake-flames" id="candles"></div>
+          <div class="cake-top"></div>
+          <div class="cake-layer cake-layer--top"></div>
+          <div class="cake-layer cake-layer--mid"></div>
+          <div class="cake-layer cake-layer--base"></div>
+          <div class="cake-plate"></div>
+        </div>
+
+        <button class="btn btn--primary" id="blowBtn">Candles bujhao 💨</button>
+        <p class="wish-note" id="wishNote" hidden></p>
+      </div>
+    </section>
+
+    <!-- ============ GIFT ============ -->
+    <section class="section gift" id="gift">
+      <div class="section-head reveal">
+        <span class="kicker">02 · A LITTLE GIFT</span>
+        <h2>Tumhare liye chhota sa surprise 🎁</h2>
+        <p class="sub">Dabao na... 😌</p>
+      </div>
+
+      <div class="gift-stage reveal">
+        <button class="gift-box" id="giftBox" aria-label="Gift kholo" aria-expanded="false">
+          <span class="gift-box__lid"></span>
+          <span class="gift-box__base"><span class="gift-box__bow">🎀</span></span>
+        </button>
+        <p class="gift-hint" id="giftHint">Click karo 💗</p>
+        <div class="gift-message" id="giftMessage" hidden></div>
+      </div>
+    </section>
+
+    <!-- ============ GALLERY ============ -->
+    <section class="section gallery" id="memories">
+      <div class="section-head reveal">
+        <span class="kicker">03 · OUR MOMENTS</span>
+        <h2>Tumhare saath ki yaadein 📸</h2>
+        <p class="sub" id="gallerySub">Har photo mein tumhari wahi muskaan.</p>
+      </div>
+      <div class="photo-grid" id="photoGrid"></div>
+    </section>
+
+    <!-- ============ REASONS ============ -->
+    <section class="section reasons" id="reasons">
+      <div class="section-head reveal">
+        <span class="kicker">04 · KYUN TUM?</span>
+        <h2>Chhoti chhoti wajahain 💗</h2>
+        <p class="sub">Jaane kaise, sab tumhi se jud jaata hai.</p>
+      </div>
+      <div class="reason-grid" id="reasonGrid"></div>
+    </section>
+
+    <!-- ============ LETTER ============ -->
+    <section class="section letter" id="letter">
+      <div class="envelope-stage reveal">
+        <button class="envelope" id="envelope" aria-label="Chitthi kholo" aria-expanded="false">
+          <span class="envelope__flap"></span>
+          <span class="envelope__body"><span class="envelope__heart">💗</span></span>
+        </button>
+        <p class="envelope-hint" id="envelopeHint">Tumhare naam ek chitthi 💌</p>
+      </div>
+
+      <article class="letter-paper" id="letterPaper" hidden>
+        <div class="letter-paper__inner">
+          <span class="letter-paper__stamp" aria-hidden="true">💗</span>
+          <div class="letter-text" id="letterText"></div>
+          <p class="letter-sign">— <span id="letterFrom">Sanir</span> 💗</p>
+        </div>
+      </article>
+    </section>
+
+    <!-- ============ ENDING ============ -->
+    <section class="section ending" id="ending">
+      <div class="ending-inner reveal">
+        <span class="ending-kicker">FOREVER · ALWAYS · YOU</span>
+        <h2 class="ending-title">I love you,<br /><em id="endingName">Kuchupuchu</em></h2>
+        <p class="ending-sub">Aaj nahi, kal nahi — har din. 🥰</p>
+        <p class="signature">— <span id="endingFrom">Sanir</span> 💗</p>
+        <div class="ending-date" id="endingDate">22 · 11 · 2026</div>
+      </div>
+      <div class="ending-hearts" aria-hidden="true">
+        <span style="--x:12%;--d:0s">💗</span><span style="--x:28%;--d:1.1s">💕</span>
+        <span style="--x:46%;--d:.4s">💖</span><span style="--x:64%;--d:1.7s">🩷</span>
+        <span style="--x:81%;--d:.8s">💗</span><span style="--x:94%;--d:2.2s">✨</span>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ LIGHTBOX ============ -->
+  <div class="lightbox" id="lightbox" hidden role="dialog" aria-label="Photo viewer">
+    <button class="lb-close" id="lbClose" aria-label="Band karo">✕</button>
+    <button class="lb-nav lb-nav--prev" id="lbPrev" aria-label="Pichhli photo">‹</button>
+    <figure class="lb-figure">
+      <img id="lbImg" src="" alt="" />
+      <figcaption id="lbCap"></figcaption>
+    </figure>
+    <button class="lb-nav lb-nav--next" id="lbNext" aria-label="Agli photo">›</button>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="photos-data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
