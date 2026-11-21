@@ -78,6 +78,74 @@ button { font: inherit; cursor: pointer; }
   pointer-events: none;
 }
 
+/* ---------- subtle all-over pattern (fills empty sides) ---------- */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -60px;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='132' height='132'%3E%3Cpath d='M34 40c-3-7-13-6-14 2-1 7 7 12 14 18 7-6 15-11 14-18-1-8-11-9-14-2z' fill='%23e87a9f' fill-opacity='0.16'/%3E%3Ccircle cx='96' cy='34' r='2.2' fill='%23d3ac6f' fill-opacity='0.4'/%3E%3Ccircle cx='62' cy='104' r='1.6' fill='%23c9557f' fill-opacity='0.28'/%3E%3C/svg%3E");
+  background-size: 132px 132px;
+  opacity: 0.75;
+  animation: patternDrift 60s linear infinite;
+}
+@keyframes patternDrift {
+  to { transform: translate3d(-132px, -132px, 0); }
+}
+
+/* ---------- decorative memory wall (wide screens) ---------- */
+.sidewall {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  display: none;
+}
+.sidewall__col {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(18px, 3vh, 34px);
+  transform: translateY(-50%);
+}
+.sidewall__col--l { left: clamp(14px, 2.4vw, 48px); }
+.sidewall__col--r { right: clamp(14px, 2.4vw, 48px); }
+
+.polaroid {
+  margin: 0;
+  width: clamp(108px, 9.4vw, 178px);
+  padding: 6px 6px 14px;
+  border-radius: 8px;
+  background: #fffaf6;
+  box-shadow: 0 18px 40px rgba(170, 60, 105, 0.22), 0 2px 0 rgba(255, 255, 255, 0.8) inset;
+  transform: rotate(var(--r, 0deg));
+  animation: polaroidFloat 7s var(--ease) infinite alternate;
+  animation-delay: var(--d, 0s);
+  opacity: 0.92;
+}
+.polaroid img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 4px;
+  filter: saturate(0.92);
+}
+@keyframes polaroidFloat {
+  from { transform: rotate(var(--r, 0deg)) translateY(-7px); }
+  to   { transform: rotate(calc(var(--r, 0deg) * -0.4)) translateY(9px); }
+}
+
+@media (min-width: 1024px) {
+  .sidewall { display: block; }
+  .cake { transform: scale(1.18); margin-top: 14px; margin-bottom: 54px; }
+}
+
+/* photos/final ke time wall ko peeche dhakel do */
+body[data-stage="photos"] .sidewall { opacity: 0.32; filter: blur(1.5px); }
+body[data-stage="final"] .sidewall { opacity: 0.45; }
+
 /* ---------- sound toggle ---------- */
 .sound-toggle {
   position: fixed;
@@ -165,7 +233,7 @@ button { font: inherit; cursor: pointer; }
    1 · DOB
    ============================================================ */
 .dob-card {
-  width: min(560px, 100%);
+  width: min(600px, 100%);
   text-align: center;
   padding: clamp(32px, 6vw, 54px) clamp(22px, 5vw, 48px);
   border-radius: 30px;
@@ -240,7 +308,7 @@ button { font: inherit; cursor: pointer; }
 /* ============================================================
    2 · REVEAL
    ============================================================ */
-.reveal-box { text-align: center; max-width: 820px; }
+.reveal-box { text-align: center; max-width: 900px; }
 .reveal-title {
   margin: 0;
   font-family: var(--serif);
@@ -456,6 +524,7 @@ button { font: inherit; cursor: pointer; }
   position: relative;
   width: min(86vw, calc(62svh * 0.75), 460px);
   aspect-ratio: 3 / 4;
+  transition: aspect-ratio 0.55s var(--ease);
   border-radius: 22px;
   overflow: hidden;
   background: #ffe3ee;
@@ -463,20 +532,32 @@ button { font: inherit; cursor: pointer; }
   box-shadow: var(--shadow-lg);
   transform: rotate(-1.6deg);
 }
+.photo-frame::before {
+  content: "";
+  position: absolute;
+  inset: -14%;
+  background-image: var(--bgimg, none);
+  background-size: cover;
+  background-position: center;
+  filter: blur(18px) brightness(1.06) saturate(1.05);
+  opacity: 0.7;
+  transform: scale(1.06);
+  transition: opacity 0.6s var(--ease);
+}
 .photo-frame img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center 32%;
+  object-fit: contain;
+  object-position: center;
   opacity: 0;
-  transform: scale(1.02);
-  transition: opacity 0.85s var(--ease), transform var(--kb, 3s) linear;
+  transform: scale(1);
+  transition: opacity 0.85s var(--ease);
+  z-index: 1;
 }
 .photo-frame img.is-active {
   opacity: 1;
-  transform: scale(1.09);
 }
 
 .photo-progress {
@@ -513,7 +594,7 @@ button { font: inherit; cursor: pointer; }
   z-index: -1;
   pointer-events: none;
 }
-.final-box { position: relative; max-width: 980px; z-index: 1; }
+.final-box { position: relative; max-width: 1080px; z-index: 1; }
 
 .final-kicker {
   margin: 0 0 18px;

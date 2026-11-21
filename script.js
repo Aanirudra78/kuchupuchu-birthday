@@ -26,6 +26,7 @@
      STAGES
      ============================================================ */
   function showStage(name) {
+    document.body.dataset.stage = name;
     document.querySelectorAll(".stage").forEach((s) => {
       s.classList.toggle("is-active", s.dataset.stage === name);
     });
@@ -469,6 +470,8 @@
     if (!item) return;
     const incoming = usingA ? slideB : slideA;
     const outgoing = usingA ? slideA : slideB;
+    const frame = $("photoFrame");
+    if (frame) frame.style.setProperty("--bgimg", `url("${item.file}")`);
 
     incoming.classList.remove("is-active");
     incoming.style.transition = "none";
@@ -482,8 +485,14 @@
       outgoing.classList.remove("is-active");
       usingA = !usingA;
     };
-    if (incoming.complete) requestAnimationFrame(swap);
-    else incoming.onload = () => { incoming.onload = null; requestAnimationFrame(swap); };
+    const fit = () => {
+      const frameEl = $("photoFrame");
+      if (!frameEl || !incoming.naturalWidth) return;
+      const ar = Math.max(0.66, Math.min(1.5, incoming.naturalWidth / incoming.naturalHeight));
+      frameEl.style.aspectRatio = ar.toFixed(3);
+    };
+    if (incoming.complete) { fit(); requestAnimationFrame(swap); }
+    else incoming.onload = () => { incoming.onload = null; fit(); requestAnimationFrame(swap); };
 
     const label = $("photoLabel");
     const count = $("photoCount");
@@ -687,7 +696,7 @@
     showStage("dob");
 
     // small debug hook (harmless in production)
-    window.__birthday = { showStage, startSlideshow, showFinal, resetCake, scheduleWish };
+    window.__birthday = { showStage, startSlideshow, showFinal, resetCake, scheduleWish, showPhoto };
   }
 
   if (document.readyState === "loading") {
