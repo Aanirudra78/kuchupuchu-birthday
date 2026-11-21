@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#160a10" />
+  <meta name="theme-color" content="#ffe6f0" />
   <title>Kuchupuchu · Happy Birthday</title>
-  <meta name="description" content="Meri jaan ke liye — ek chhoti si website, saari photos aur dil ki baatein." />
+  <meta name="description" content="Ek chhota sa birthday surprise — sirf tumhare liye." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,117 +13,92 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="grain" aria-hidden="true"></div>
-  <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
   <canvas id="fx" aria-hidden="true"></canvas>
+  <div class="bg-blob bg-blob--a" aria-hidden="true"></div>
+  <div class="bg-blob bg-blob--b" aria-hidden="true"></div>
+  <div class="bg-blob bg-blob--c" aria-hidden="true"></div>
 
-  <!-- ================= COVER ================= -->
-  <header class="cover" id="cover">
-    <div class="cover__media">
-      <img id="coverImg" alt="" />
-      <div class="cover__placeholder" id="coverPlaceholder" aria-hidden="true"><span>K</span></div>
-    </div>
-    <div class="cover__scrim" aria-hidden="true"></div>
+  <button class="sound-toggle" id="soundToggle" aria-label="Sound on/off" aria-pressed="true">
+    <span id="soundIcon">♪</span>
+  </button>
 
-    <div class="cover__content">
-      <p class="cover__kicker" id="coverKicker">22 · 11 · 2026</p>
-      <h1 class="cover__name" id="coverName">Kuchupuchu</h1>
-      <p class="cover__line" id="coverLine">Happy Birthday, meri jaan</p>
-      <p class="cover__meta"><span id="coverAge">19</span><i></i><span id="coverDob">22 · 11 · 2007</span></p>
-    </div>
+  <main class="experience">
+    <!-- ================= 1 · DOB ================= -->
+    <section class="stage stage--dob is-active" data-stage="dob">
+      <div class="dob-card">
+        <p class="kicker" id="dobKicker">A LITTLE SOMETHING FOR YOU</p>
+        <h1 id="dobTitle">Enter your DOB</h1>
+        <p class="sub" id="dobSub">Sahi DOB dalo… phir kuch special hai 💗</p>
 
-    <a class="cover__scroll" href="#intro" aria-label="Neeche scroll karo">
-      <span>scroll</span>
-      <span class="cover__scroll-line"></span>
-    </a>
-  </header>
-
-  <main>
-    <!-- ================= INTRO ================= -->
-    <section class="intro" id="intro">
-      <p class="intro__lead r" id="introLead">Kuchupuchu,</p>
-      <div class="intro__lines" id="introLines"></div>
-    </section>
-
-    <!-- ================= CHAPTERS ================= -->
-    <section class="chapters" id="chapters" aria-label="Hamari kahani"></section>
-
-    <!-- ================= REEL ================= -->
-    <section class="reel" id="reel">
-      <div class="reel__head">
-        <span class="eyebrow">MOMENTS</span>
-        <h2>Tumhare saath ke kuch pal</h2>
-        <p class="reel__hint" id="reelHint">Drag karo ya swipe — sab photos dekhna →</p>
+        <form id="dobForm" autocomplete="off" novalidate>
+          <div class="dob-row">
+            <select id="dobDay" aria-label="Day"></select>
+            <select id="dobMonth" aria-label="Month"></select>
+            <select id="dobYear" aria-label="Year"></select>
+          </div>
+          <p class="dob-error" id="dobError" hidden></p>
+          <button class="btn" type="submit">Enter</button>
+        </form>
       </div>
-      <div class="reel__track" id="reelTrack"></div>
     </section>
 
-    <!-- ================= REASONS ================= -->
-    <section class="reasons" id="reasons">
-      <div class="reasons__head">
-        <span class="eyebrow">10 THINGS</span>
-        <h2>Mujhe tumse pyar kyun hai</h2>
+    <!-- ================= 2 · REVEAL ================= -->
+    <section class="stage stage--reveal" data-stage="reveal">
+      <div class="reveal-box">
+        <h1 class="reveal-title" id="revealTitle">Ohh, it's your birthday!</h1>
+        <p class="reveal-sub" id="revealSub">I think I made something for you…</p>
+        <button class="btn reveal-btn" id="revealBtn">Click here</button>
       </div>
-      <ol class="reasons__list" id="reasonsList"></ol>
     </section>
 
-    <!-- ================= WISH / CAKE ================= -->
-    <section class="wish" id="wish">
-      <div class="wish__inner">
-        <span class="eyebrow" id="wishKicker">MAKE A WISH</span>
-        <h2 id="wishTitle">Aaj ek wish maango</h2>
-        <p class="wish__line" id="wishLine">Meri toh sirf ek hai — tum hamesha khush raho.</p>
+    <!-- ================= 3 · CAKE ================= -->
+    <section class="stage stage--cake" data-stage="cake">
+      <div class="cake-box">
+        <h2 class="wish-title" id="wishTitle">Make your wish</h2>
 
         <div class="cake" id="cake" aria-label="Birthday cake">
-          <div class="cake__flames" id="candles"></div>
           <div class="cake__glow" aria-hidden="true"></div>
+          <div class="cake__flames" id="candles"></div>
           <div class="cake__tier cake__tier--top"></div>
           <div class="cake__tier cake__tier--mid"></div>
           <div class="cake__tier cake__tier--base"></div>
           <div class="cake__plate"></div>
         </div>
 
-        <button class="btn" id="blowBtn">Candles bujhao</button>
-        <p class="wish__after" id="wishAfter" hidden></p>
+        <button class="btn" id="blowBtn" hidden>Blown the candles</button>
+        <button class="btn btn--gift" id="giftBtn" hidden>Gift for you 🎁</button>
       </div>
     </section>
 
-    <!-- ================= LETTER ================= -->
-    <section class="letter" id="letter">
-      <article class="letter__paper">
-        <button class="letter__seal" id="letterSeal" aria-label="Seal dabao">💗</button>
-        <div class="letter__text" id="letterText"></div>
-        <p class="letter__sign">— <span id="letterFrom">Sanir</span></p>
-      </article>
+    <!-- ================= 4 · PHOTOS ================= -->
+    <section class="stage stage--photos" data-stage="photos">
+      <div class="photo-top">
+        <span class="photo-label" id="photoLabel">Tum</span>
+        <span class="photo-count" id="photoCount">01 / 01</span>
+      </div>
+
+      <div class="photo-frame" id="photoFrame">
+        <img id="slideA" alt="" />
+        <img id="slideB" alt="" />
+      </div>
+
+      <div class="photo-progress"><span id="photoBar"></span></div>
     </section>
 
-    <!-- ================= ENDING ================= -->
-    <section class="ending" id="ending">
-      <div class="ending__media">
-        <img id="endingImg" alt="" />
-        <div class="ending__placeholder" id="endingPlaceholder" aria-hidden="true"><span>K</span></div>
-      </div>
-      <div class="ending__scrim" aria-hidden="true"></div>
-      <div class="ending__content">
-        <span class="eyebrow" id="endingKicker">FOREVER · ALWAYS · YOU</span>
-        <h2><span id="endingTitle">I love you,</span><br /><em id="endingName">Kuchupuchu</em></h2>
-        <p id="endingSub">Aaj nahi, kal nahi — hamesha.</p>
-        <p class="ending__sign">— <span id="endingFrom">Sanir</span> 💗</p>
-        <p class="ending__date" id="endingDate">22 · 11 · 2026</p>
+    <!-- ================= 5 · FINAL ================= -->
+    <section class="stage stage--final" data-stage="final">
+      <div class="final-box">
+        <p class="final-kicker" id="finalKicker">HAPPY BIRTHDAY, MERI JAAN</p>
+        <h1 class="final-line1" id="finalLine1">I LOVE YOU</h1>
+        <h2 class="final-line2" id="finalLine2">MY BABY GIRL</h2>
+        <p class="final-from" id="finalFrom">from Anirudra</p>
+        <button class="replay" id="replayBtn">↺ phir se dekho</button>
       </div>
     </section>
   </main>
 
-  <!-- ================= LIGHTBOX ================= -->
-  <div class="lightbox" id="lightbox" hidden role="dialog" aria-label="Photo">
-    <button class="lb-close" id="lbClose" aria-label="Band karo">✕</button>
-    <button class="lb-nav lb-nav--prev" id="lbPrev" aria-label="Pichhli">‹</button>
-    <figure class="lb-figure">
-      <img id="lbImg" src="" alt="" />
-      <figcaption id="lbCap"></figcaption>
-    </figure>
-    <button class="lb-nav lb-nav--next" id="lbNext" aria-label="Agli">›</button>
-  </div>
+  <audio id="bgAudio" loop preload="auto"></audio>
+  <audio id="rangAudio" preload="auto"></audio>
 
   <script src="config.js"></script>
   <script src="photos-data.js"></script>

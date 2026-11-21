@@ -1,562 +1,693 @@
 /* ============================================================
-   KUCHUPUCHU · BIRTHDAY SITE — interactions
-   No libraries. Reads config.js + photos-data.js.
+   KUCHUPUCHU · BIRTHDAY EXPERIENCE
+   DOB → reveal → cake → candles → gift → photos → final
    ============================================================ */
 (function () {
   "use strict";
 
   const cfg = window.BIRTHDAY_CONFIG || {};
+  const texts = cfg.texts || {};
+  const audioCfg = cfg.audio || {};
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const $ = (id) => document.getElementById(id);
-  const photos = Array.isArray(window.BIRTHDAY_PHOTOS) ? window.BIRTHDAY_PHOTOS : [];
-
   const setText = (id, value) => {
     const el = $(id);
     if (el && value != null) el.textContent = value;
   };
-  const dotted = (date) => String(date || "").replace(/-/g, " · ");
 
-  const srcOf = (p) => (typeof p === "string" ? p : (p && (p.file || p.src)) || "");
-  const capOf = (p, i) =>
-    (p && typeof p === "object" && p.caption) ||
-    (cfg.captions && cfg.captions[i % cfg.captions.length]) ||
-    "";
-  const focusOf = (i) =>
-    (cfg.photoFocus && cfg.photoFocus[i % cfg.photoFocus.length]) || "center 35%";
+  /* ---------- photos: singles first, then doubles ---------- */
+  const allPhotos = Array.isArray(window.BIRTHDAY_PHOTOS) ? window.BIRTHDAY_PHOTOS : [];
+  const singles = allPhotos.filter((p) => (p.group || "single") === "single");
+  const doubles = allPhotos.filter((p) => p.group === "double");
+  const ordered = singles.concat(doubles);
+  if (!ordered.length && allPhotos.length) ordered.push(...allPhotos);
 
-  function makeImage(src, alt, focus, eager) {
-    const img = document.createElement("img");
-    img.src = src;
-    img.alt = alt || "";
-    img.loading = eager ? "eager" : "lazy";
-    img.decoding = "async";
-    img.draggable = false;
-    img.style.setProperty("--focus", focus || "center 35%");
-    return img;
-  }
-
-  /* ---------- 1. words ---------- */
-  function applyConfig() {
-    const name = cfg.name || "Kuchupuchu";
-    document.title = `${name} · Happy Birthday`;
-
-    setText("coverKicker", cfg.coverKicker || dotted(cfg.birthday));
-    setText("coverName", name);
-    setText("coverLine", cfg.coverLine || "Happy Birthday, meri jaan");
-    setText("coverAge", cfg.age);
-    setText("coverDob", dotted(cfg.dob));
-
-    setText("introLead", (cfg.intro && cfg.intro.lead) || `${name},`);
-
-    setText("wishKicker", cfg.wish && cfg.wish.kicker);
-    setText("wishTitle", cfg.wish && cfg.wish.title);
-    setText("wishLine", cfg.wish && cfg.wish.line);
-    setText("wishAfter", cfg.wish && cfg.wish.after);
-
-    setText("letterText", String(cfg.letter || "").replace(/__AGE__/g, cfg.age));
-    setText("letterFrom", cfg.from);
-
-    setText("endingKicker", cfg.ending && cfg.ending.kicker);
-    setText("endingTitle", cfg.ending && cfg.ending.title);
-    setText("endingName", name);
-    setText("endingSub", cfg.ending && cfg.ending.sub);
-    setText("endingFrom", cfg.from);
-    setText("endingDate", dotted(cfg.birthday));
-  }
-
-  /* ---------- 2. cover + ending photos ---------- */
-  function buildCover() {
-    const cover = $("cover");
-    const img = $("coverImg");
-    if (!cover || !img) return;
-    if (photos.length) {
-      img.src = srcOf(photos[0]);
-      img.alt = capOf(photos[0], 0);
-      img.style.objectPosition = focusOf(0);
-      img.loading = "eager";
-      cover.classList.add("has-photo");
-    }
-  }
-
-  function buildEnding() {
-    const ending = $("ending");
-    const img = $("endingImg");
-    if (!ending || !img) return;
-    if (photos.length) {
-      const p = photos[photos.length - 1];
-      img.src = srcOf(p);
-      img.alt = capOf(p, photos.length - 1);
-      img.style.objectPosition = focusOf(photos.length - 1);
-      ending.classList.add("has-photo");
-    }
-  }
-
-  /* ---------- 3. intro lines ---------- */
-  function buildIntro() {
-    const wrap = $("introLines");
-    if (!wrap) return;
-    const lines = (cfg.intro && cfg.intro.lines) || [];
-    lines.forEach((line, i) => {
-      const p = document.createElement("p");
-      p.className = "intro__line r";
-      p.style.setProperty("--d", `${(i * 0.16 + 0.1).toFixed(2)}s`);
-      p.textContent = line;
-      wrap.appendChild(p);
+  /* ============================================================
+     STAGES
+     ============================================================ */
+  function showStage(name) {
+    document.querySelectorAll(".stage").forEach((s) => {
+      s.classList.toggle("is-active", s.dataset.stage === name);
     });
   }
 
-  /* ---------- 4. chapters ---------- */
-  function buildChapters() {
-    const wrap = $("chapters");
-    if (!wrap) return;
-    const chapters = Array.isArray(cfg.chapters) ? cfg.chapters : [];
+  /* ============================================================
+     TEXT
+     ============================================================ */
+  function applyTexts() {
+    setText("dobKicker", texts.dobKicker);
+    setText("dobTitle", texts.dobTitle);
+    setText("dobSub", texts.dobSub);
+    setText("revealTitle", texts.revealTitle);
+    setText("revealSub", texts.revealSub);
+    setText("revealBtn", texts.revealBtn);
+    setText("wishTitle", texts.wishTitle);
+    setText("blowBtn", texts.blowBtn);
+    setText("giftBtn", texts.giftBtn);
+    setText("finalKicker", texts.finalKicker);
+    setText("finalLine1", texts.finalLine1);
+    setText("finalLine2", texts.finalLine2);
+    setText("finalFrom", texts.finalFrom);
+  }
 
-    chapters.forEach((ch, i) => {
-      const photoIndex = photos.length ? (1 + i) % photos.length : -1;
-      const photo = photoIndex >= 0 ? photos[photoIndex] : null;
+  /* ============================================================
+     AUDIO
+     ============================================================ */
+  let audioCtx = null;
+  let muted = false;
 
-      const section = document.createElement("section");
-      section.className = "chapter";
+  function ensureCtx() {
+    if (!audioCtx) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx) audioCtx = new Ctx();
+    }
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+    return audioCtx;
+  }
 
-      const media = document.createElement("div");
-      media.className = "chapter__media";
+  function fadeAudio(el, to, ms, done) {
+    if (!el) return;
+    const from = el.volume;
+    const dur = Math.max(1, ms);
+    const start = performance.now();
+    function step(now) {
+      const p = Math.min(1, (now - start) / dur);
+      el.volume = Math.max(0, Math.min(1, from + (to - from) * p));
+      if (p < 1) requestAnimationFrame(step);
+      else if (done) done();
+    }
+    requestAnimationFrame(step);
+  }
 
-      if (photo) {
-        media.appendChild(makeImage(srcOf(photo), capOf(photo, photoIndex), focusOf(photoIndex), false));
-      } else {
-        const ph = document.createElement("div");
-        ph.className = "chapter__ph";
-        const b = document.createElement("b");
-        b.textContent = String(i + 1).padStart(2, "0");
-        ph.appendChild(b);
-        ph.appendChild(document.createTextNode("photo"));
-        media.appendChild(ph);
+  /* ---------- romantic bed ---------- */
+  const bgAudio = $("bgAudio");
+  let bgStarted = false;
+
+  function startRomantic() {
+    if (!bgAudio || !audioCfg.romantic) return;
+    if (!bgAudio.src) bgAudio.src = audioCfg.romantic;
+    bgAudio.loop = true;
+    bgAudio.muted = muted;
+    bgAudio.volume = 0;
+    const p = bgAudio.play();
+    if (p && p.catch) {
+      p.catch(() => {});
+    }
+    bgStarted = true;
+    fadeAudio(bgAudio, audioCfg.romanticVolume || 0.32, 1600);
+  }
+
+  function stopRomantic() {
+    if (!bgStarted || !bgAudio) return;
+    bgStarted = false;
+    fadeAudio(bgAudio, 0, 900, () => {
+      try { bgAudio.pause(); bgAudio.currentTime = 0; } catch (e) {}
+    });
+  }
+
+  /* ---------- Happy Birthday (synthesised music box) ---------- */
+  let birthday = null;
+
+  function buildBirthdayBuffer(ctx) {
+    const beat = 0.5; // 120 bpm
+    const melody = [
+      [0, 392.0, 0.75], [0.75, 392.0, 0.25], [1, 440.0, 1], [2, 392.0, 1], [3, 523.25, 1], [4, 493.88, 2],
+      [6, 392.0, 0.75], [6.75, 392.0, 0.25], [7, 440.0, 1], [8, 392.0, 1], [9, 587.33, 1], [10, 523.25, 2],
+      [12, 392.0, 0.75], [12.75, 392.0, 0.25], [13, 783.99, 1], [14, 659.25, 1], [15, 523.25, 1], [16, 493.88, 1], [17, 440.0, 2],
+      [19, 698.46, 0.75], [19.75, 698.46, 0.25], [20, 659.25, 1], [21, 523.25, 1], [22, 587.33, 1], [23, 523.25, 2]
+    ];
+    const totalBeats = 26;
+    const sr = ctx.sampleRate;
+    const dur = totalBeats * beat + 1.4;
+    const buffer = ctx.createBuffer(1, Math.ceil(dur * sr), sr);
+    const data = buffer.getChannelData(0);
+
+    for (const [startBeat, freq, beats] of melody) {
+      const t0 = startBeat * beat;
+      const len = beats * beat + 0.55;
+      const n0 = Math.floor(t0 * sr);
+      const n1 = Math.min(data.length, Math.floor((t0 + len) * sr));
+      for (let i = n0; i < n1; i++) {
+        const t = (i - n0) / sr;
+        const env = Math.exp(-3.1 * t) * (1 - Math.exp(-t * 190));
+        const v =
+          Math.sin(2 * Math.PI * freq * t) * 0.55 +
+          Math.sin(2 * Math.PI * freq * 2 * t) * 0.18 +
+          Math.sin(2 * Math.PI * freq * 3 * t) * 0.07;
+        data[i] += v * env * 0.5;
       }
+    }
 
-      const body = document.createElement("div");
-      body.className = "chapter__body r";
-      body.style.setProperty("--d", "0.08s");
-
-      const num = document.createElement("span");
-      num.className = "chapter__num";
-      num.textContent = String(i + 1).padStart(2, "0");
-
-      const line = document.createElement("p");
-      line.className = "chapter__line";
-      line.textContent = ch.line || "";
-
-      body.appendChild(num);
-      body.appendChild(line);
-      section.appendChild(media);
-      section.appendChild(body);
-      wrap.appendChild(section);
-    });
+    let max = 0;
+    for (let i = 0; i < data.length; i++) max = Math.max(max, Math.abs(data[i]));
+    if (max > 0.9) {
+      const k = 0.9 / max;
+      for (let i = 0; i < data.length; i++) data[i] *= k;
+    }
+    return buffer;
   }
 
-  /* ---------- 5. reel ---------- */
-  function buildReel() {
-    const track = $("reelTrack");
-    if (!track) return;
+  function startBirthday() {
+    const ctx = ensureCtx();
+    if (!ctx) return;
+    const buffer = buildBirthdayBuffer(ctx);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.loop = true;
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    src.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(muted ? 0 : 0.5, ctx.currentTime + 1.2);
+    birthday = { src, gain };
+  }
 
-    const items = [];
-    if (photos.length) {
-      photos.forEach((p, i) => {
-        items.push({ src: srcOf(p), caption: capOf(p, i), alt: capOf(p, i) });
-      });
+  function stopBirthday() {
+    if (!birthday) return;
+    const ctx = ensureCtx();
+    const { src, gain } = birthday;
+    birthday = null;
+    if (ctx) {
+      const t = ctx.currentTime;
+      gain.gain.cancelScheduledValues(t);
+      gain.gain.setValueAtTime(gain.gain.value, t);
+      gain.gain.linearRampToValueAtTime(0, t + 1);
     }
-    if (window.setBirthdayPhotos) window.setBirthdayPhotos(items);
+    setTimeout(() => { try { src.stop(); } catch (e) {} }, 1150);
+  }
 
-    if (!photos.length) {
-      for (let i = 0; i < 8; i++) {
-        const card = document.createElement("figure");
-        card.className = "reel__card reel__card--ph";
-        const b = document.createElement("b");
-        b.textContent = String(i + 1).padStart(2, "0");
-        card.appendChild(b);
-        card.appendChild(document.createTextNode("photo"));
-        track.appendChild(card);
+  /* ---------- Rang Jo Lagyo segments ---------- */
+  const rangAudio = $("rangAudio");
+  let rangAvailable = null;
+  let rangTimer = null;
+  let rangStarted = false;
+
+  function initRang() {
+    if (!rangAudio) return;
+    rangAudio.addEventListener("error", () => { rangAvailable = false; });
+    rangAudio.addEventListener("canplay", () => { if (rangAvailable === null) rangAvailable = true; });
+    rangAudio.src = audioCfg.rang || "";
+  }
+
+  function startRang() {
+    if (!rangAudio || rangAvailable === false) { startRomantic(); return; }
+
+    const segs = audioCfg.rangSegments || [[35, 90], [130, 170]];
+    let began = false;
+
+    const begin = () => {
+      if (began) return;
+      began = true;
+      try { rangAudio.currentTime = segs[0][0]; } catch (e) {}
+      rangAudio.muted = muted;
+      rangAudio.volume = 0;
+      const p = rangAudio.play();
+      if (p && p.catch) {
+        p.catch(() => {
+          rangAvailable = false;
+          startRomantic();
+        });
       }
-      setText("reelHint", "Photos aate hi yahan tumhare saare pal aa jayenge 💗");
-      return;
-    }
+      rangStarted = true;
+      fadeAudio(rangAudio, audioCfg.rangVolume || 0.72, 1300);
 
-    photos.forEach((p, i) => {
-      const card = document.createElement("figure");
-      card.className = "reel__card";
-      card.appendChild(makeImage(srcOf(p), capOf(p, i), focusOf(i), false));
-
-      const cap = document.createElement("figcaption");
-      const idx = document.createElement("span");
-      idx.textContent = String(i + 1).padStart(2, "0");
-      cap.appendChild(idx);
-      cap.appendChild(document.createTextNode(capOf(p, i)));
-      card.appendChild(cap);
-
-      card.addEventListener("click", () => {
-        if (typeof window.openBirthdayPhoto === "function") window.openBirthdayPhoto(i);
-      });
-      track.appendChild(card);
-    });
-  }
-
-  function initReelDrag() {
-    const track = $("reelTrack");
-    if (!track) return;
-    let down = false, startX = 0, startScroll = 0, moved = 0;
-
-    track.addEventListener("pointerdown", (e) => {
-      down = true;
-      startX = e.clientX;
-      startScroll = track.scrollLeft;
-      moved = 0;
-      track.classList.add("dragging");
-    });
-    track.addEventListener("pointermove", (e) => {
-      if (!down) return;
-      const dx = e.clientX - startX;
-      if (Math.abs(dx) > 6) moved = 1;
-      track.scrollLeft = startScroll - dx;
-    });
-    const end = () => {
-      down = false;
-      track.classList.remove("dragging");
-      setTimeout(() => { moved = 0; }, 60);
+      let segIndex = 0;
+      clearInterval(rangTimer);
+      rangTimer = setInterval(() => {
+        if (!rangAudio || rangAudio.paused) return;
+        const seg = segs[segIndex];
+        if (!seg) { clearInterval(rangTimer); return; }
+        if (rangAudio.currentTime >= seg[1]) {
+          segIndex++;
+          if (segIndex < segs.length) {
+            try { rangAudio.currentTime = segs[segIndex][0]; } catch (e) {}
+          } else {
+            clearInterval(rangTimer);
+            fadeAudio(rangAudio, 0, 1800, () => { try { rangAudio.pause(); } catch (e) {} });
+          }
+        }
+      }, 200);
     };
-    track.addEventListener("pointerup", end);
-    track.addEventListener("pointercancel", end);
-    track.addEventListener("pointerleave", end);
 
-    // a drag should not open the lightbox
-    track.addEventListener("click", (e) => {
-      if (moved) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    }, true);
-  }
-
-  /* ---------- 6. reasons ---------- */
-  function buildReasons() {
-    const list = $("reasonsList");
-    if (!list) return;
-    const reasons = Array.isArray(cfg.reasons) ? cfg.reasons : [];
-    reasons.forEach((text, i) => {
-      const li = document.createElement("li");
-      li.className = "reasons__item r";
-      li.style.setProperty("--d", `${(i * 0.05).toFixed(2)}s`);
-      const p = document.createElement("p");
-      p.textContent = text;
-      li.appendChild(p);
-      list.appendChild(li);
-    });
-  }
-
-  /* ---------- 7. cake ---------- */
-  function initCake() {
-    const count = Number(cfg.age) || 19;
-    const wrap = $("candles");
-    if (wrap) {
-      for (let i = 0; i < count; i++) {
-        const c = document.createElement("span");
-        c.className = "candle";
-        c.style.setProperty("--cd", (-i * 0.13).toFixed(2) + "s");
-        const f = document.createElement("span");
-        f.className = "flame";
-        f.style.setProperty("--fd", (-i * 0.07).toFixed(2) + "s");
-        c.appendChild(f);
-        wrap.appendChild(c);
-      }
+    if (rangAudio.readyState >= 1) begin();
+    else {
+      rangAudio.addEventListener("loadedmetadata", begin, { once: true });
+      setTimeout(() => {
+        if (began) return;
+        if (rangAvailable === false) startRomantic();
+        else begin();
+      }, 3000);
     }
+  }
 
-    const btn = $("blowBtn");
-    const after = $("wishAfter");
+  function stopRang() {
+    clearInterval(rangTimer);
+    if (!rangStarted || !rangAudio) return;
+    rangStarted = false;
+    fadeAudio(rangAudio, 0, 800, () => { try { rangAudio.pause(); } catch (e) {} });
+  }
+
+  /* ---------- mute ---------- */
+  function applyMute() {
+    if (bgAudio) bgAudio.muted = muted;
+    if (rangAudio) rangAudio.muted = muted;
+    if (birthday && audioCtx) {
+      birthday.gain.gain.setTargetAtTime(muted ? 0 : 0.5, audioCtx.currentTime, 0.06);
+    }
+    const icon = $("soundIcon");
+    const btn = $("soundToggle");
+    if (icon) icon.textContent = muted ? "✕" : "♪";
+    if (btn) {
+      btn.classList.toggle("is-muted", muted);
+      btn.setAttribute("aria-pressed", String(!muted));
+    }
+  }
+
+  function initSoundToggle() {
+    const btn = $("soundToggle");
     if (!btn) return;
     btn.addEventListener("click", () => {
+      muted = !muted;
+      ensureCtx();
+      applyMute();
+      if (!muted && bgStarted && bgAudio && bgAudio.paused) {
+        bgAudio.play().catch(() => {});
+      }
+    });
+  }
+
+  /* ============================================================
+     DOB GATE
+     ============================================================ */
+  let attempts = 0;
+  let wishTimer = null;
+
+  function fillSelect(sel, items, placeholder) {
+    if (!sel) return;
+    sel.innerHTML = "";
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = placeholder;
+    ph.disabled = true;
+    ph.selected = true;
+    sel.appendChild(ph);
+    items.forEach((it) => {
+      const o = document.createElement("option");
+      o.value = it.value;
+      o.textContent = it.label;
+      sel.appendChild(o);
+    });
+  }
+
+  function initDob() {
+    const days = Array.from({ length: 31 }, (_, i) => ({
+      value: i + 1,
+      label: String(i + 1).padStart(2, "0")
+    }));
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map(
+      (m, i) => ({ value: i + 1, label: m })
+    );
+    const thisYear = new Date().getFullYear();
+    const years = [];
+    for (let y = thisYear; y >= 1990; y--) years.push({ value: y, label: String(y) });
+
+    fillSelect($("dobDay"), days, "DD");
+    fillSelect($("dobMonth"), months, "MM");
+    fillSelect($("dobYear"), years, "YYYY");
+
+    const form = $("dobForm");
+    if (!form) return;
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const d = Number($("dobDay").value);
+      const m = Number($("dobMonth").value);
+      const y = Number($("dobYear").value);
+      const err = $("dobError");
+
+      if (!d || !m || !y) {
+        showDobError(texts.dobIncomplete, false);
+        shakeForm();
+        return;
+      }
+
+      const target = cfg.dob || {};
+      if (d === target.d && m === target.m && y === target.y) {
+        if (err) err.hidden = true;
+        ensureCtx();
+        startRomantic();
+        showStage("reveal");
+      } else {
+        attempts++;
+        const hint = attempts >= 2;
+        showDobError(hint ? texts.dobHint : texts.dobWrong, hint);
+        shakeForm();
+      }
+    });
+  }
+
+  function showDobError(msg, isHint) {
+    const err = $("dobError");
+    if (!err) return;
+    err.textContent = msg || "";
+    err.hidden = !msg;
+    err.classList.toggle("is-hint", !!isHint);
+  }
+
+  function shakeForm() {
+    const form = $("dobForm");
+    if (!form) return;
+    form.classList.remove("dob-form-shake");
+    void form.offsetWidth;
+    form.classList.add("dob-form-shake");
+  }
+
+  /* ============================================================
+     REVEAL → CAKE
+     ============================================================ */
+  function initReveal() {
+    const btn = $("revealBtn");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      stopRomantic();
+      startBirthday();
+      showStage("cake");
+      resetCake();
+      scheduleWish();
+    });
+  }
+
+  function buildCandles() {
+    const wrap = $("candles");
+    if (!wrap) return;
+    wrap.innerHTML = "";
+    const count = Number(cfg.age) || 19;
+    for (let i = 0; i < count; i++) {
+      const c = document.createElement("span");
+      c.className = "candle";
+      c.style.setProperty("--cd", (-i * 0.13).toFixed(2) + "s");
+      const f = document.createElement("span");
+      f.className = "flame";
+      f.style.setProperty("--fd", (-i * 0.07).toFixed(2) + "s");
+      c.appendChild(f);
+      wrap.appendChild(c);
+    }
+  }
+
+  function resetCake() {
+    clearTimeout(wishTimer);
+    document.querySelectorAll(".candle").forEach((c) => c.classList.remove("out"));
+    const wish = $("wishTitle");
+    if (wish) wish.classList.remove("is-hidden");
+    const blow = $("blowBtn");
+    if (blow) {
+      blow.hidden = true;
+      blow.disabled = false;
+    }
+    const gift = $("giftBtn");
+    if (gift) gift.hidden = true;
+  }
+
+  function scheduleWish() {
+    clearTimeout(wishTimer);
+    wishTimer = setTimeout(() => {
+      const wish = $("wishTitle");
+      const blow = $("blowBtn");
+      if (wish) wish.classList.add("is-hidden");
+      if (blow) blow.hidden = false;
+    }, 5000);
+  }
+
+  function initCake() {
+    buildCandles();
+
+    const blow = $("blowBtn");
+    const gift = $("giftBtn");
+    if (!blow || !gift) return;
+
+    blow.addEventListener("click", () => {
+      blow.disabled = true;
       const candles = Array.from(document.querySelectorAll(".candle"));
       candles.forEach((c, i) => setTimeout(() => c.classList.add("out"), i * 55));
-      btn.disabled = true;
-      btn.textContent = "Wish ho gayi 💗";
-      if (after) after.hidden = false;
-      setTimeout(() => burstAt($("cake"), 60), 300);
+      setTimeout(() => {
+        blow.hidden = true;
+        gift.hidden = false;
+        preloadAll();
+        burst(window.innerWidth / 2, window.innerHeight * 0.42, 54);
+      }, 900);
+    });
+
+    gift.addEventListener("click", () => {
+      stopBirthday();
+      startRang();
+      showStage("photos");
+      startSlideshow();
     });
   }
 
-  /* ---------- 8. letter seal ---------- */
-  function initLetter() {
-    const seal = $("letterSeal");
-    if (!seal) return;
-    seal.addEventListener("click", () => {
-      burstAt(seal, 30);
-      seal.style.transform = "translateX(-50%) scale(0.9) rotate(8deg)";
-      setTimeout(() => { seal.style.transform = ""; }, 220);
+  /* ============================================================
+     PHOTOS
+     ============================================================ */
+  const slideA = $("slideA");
+  const slideB = $("slideB");
+  let slideIndex = 0;
+  let slideTimer = null;
+  let usingA = true;
+  let slideInterval = 3000;
+
+  function preloadAll() {
+    ordered.forEach((p) => {
+      const im = new Image();
+      im.src = p.file;
     });
   }
 
-  /* ---------- 9. lightbox ---------- */
-  function initLightbox() {
-    const lb = $("lightbox");
-    const img = $("lbImg");
-    const cap = $("lbCap");
-    if (!lb) return;
-    let items = [];
-    let index = 0;
+  function showPhoto(i) {
+    const item = ordered[i];
+    if (!item) return;
+    const incoming = usingA ? slideB : slideA;
+    const outgoing = usingA ? slideA : slideB;
 
-    function show(i) {
-      if (!items.length) return;
-      index = (i + items.length) % items.length;
-      const it = items[index];
-      img.src = it.src;
-      img.alt = it.alt || it.caption || "";
-      cap.textContent = it.caption || "";
-      img.style.animation = "none";
-      void img.offsetWidth;
-      img.style.animation = "";
-    }
-    function close() {
-      lb.hidden = true;
-      document.body.style.overflow = "";
-    }
+    incoming.classList.remove("is-active");
+    incoming.style.transition = "none";
+    void incoming.offsetWidth;
+    incoming.style.transition = "";
+    incoming.src = item.file;
+    incoming.alt = item.alt || "";
 
-    window.openBirthdayPhoto = (i) => {
-      if (!items.length) return;
-      lb.hidden = false;
-      document.body.style.overflow = "hidden";
-      show(i);
+    const swap = () => {
+      incoming.classList.add("is-active");
+      outgoing.classList.remove("is-active");
+      usingA = !usingA;
     };
-    window.setBirthdayPhotos = (arr) => {
-      items = Array.isArray(arr) ? arr : [];
-    };
+    if (incoming.complete) requestAnimationFrame(swap);
+    else incoming.onload = () => { incoming.onload = null; requestAnimationFrame(swap); };
 
-    $("lbClose").addEventListener("click", close);
-    $("lbPrev").addEventListener("click", () => show(index - 1));
-    $("lbNext").addEventListener("click", () => show(index + 1));
-    lb.addEventListener("click", (e) => { if (e.target === lb) close(); });
-    document.addEventListener("keydown", (e) => {
-      if (lb.hidden) return;
-      if (e.key === "Escape") close();
-      else if (e.key === "ArrowLeft") show(index - 1);
-      else if (e.key === "ArrowRight") show(index + 1);
-    });
-
-    let sx = 0;
-    lb.addEventListener("touchstart", (e) => { sx = e.touches[0].clientX; }, { passive: true });
-    lb.addEventListener("touchend", (e) => {
-      const dx = e.changedTouches[0].clientX - sx;
-      if (Math.abs(dx) > 45) show(dx > 0 ? index - 1 : index + 1);
-    }, { passive: true });
+    const label = $("photoLabel");
+    const count = $("photoCount");
+    const bar = $("photoBar");
+    const labels = cfg.labels || { single: "Tum", double: "Hum dono" };
+    if (label) label.textContent = item.group === "double" ? labels.double : labels.single;
+    if (count) count.textContent = `${String(i + 1).padStart(2, "0")} / ${String(ordered.length).padStart(2, "0")}`;
+    if (bar) bar.style.width = `${(((i + 1) / ordered.length) * 100).toFixed(2)}%`;
   }
 
-  /* ---------- 10. reveal ---------- */
-  function initReveal() {
-    const els = Array.from(document.querySelectorAll(".r"));
-    if (reduce || !("IntersectionObserver" in window)) {
-      els.forEach((el) => el.classList.add("in"));
-      return;
-    }
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add("in");
-            io.unobserve(e.target);
-          }
-        });
-      },
-      { threshold: 0.14, rootMargin: "0px 0px -8% 0px" }
-    );
-    els.forEach((el) => io.observe(el));
-  }
+  function startSlideshow() {
+    if (!ordered.length) { showFinal(); return; }
 
-  /* ---------- 11. parallax ---------- */
-  function initParallax() {
-    if (reduce) return;
-    const media = Array.from(document.querySelectorAll(".chapter__media"));
-    if (!media.length) return;
+    const segs = audioCfg.rangSegments || [[35, 90], [130, 170]];
+    const totalSec = segs.reduce((sum, s) => sum + Math.max(0, s[1] - s[0]), 0);
+    const seconds =
+      rangAvailable === false
+        ? (audioCfg.fallbackPhotoSeconds || 3.2)
+        : (totalSec ? totalSec / ordered.length : 3);
 
-    let ticking = false;
-    const update = () => {
-      ticking = false;
-      const vh = window.innerHeight;
-      media.forEach((m) => {
-        const img = m.querySelector("img");
-        if (!img) return;
-        const r = m.getBoundingClientRect();
-        if (r.bottom < -80 || r.top > vh + 80) return;
-        const progress = (r.top + r.height / 2 - vh / 2) / vh; // -1 .. 1
-        img.style.setProperty("--py", `${(progress * -38).toFixed(1)}px`);
-      });
-    };
-    const onScroll = () => {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(update);
+    slideInterval = Math.max(1600, seconds * 1000);
+    document.documentElement.style.setProperty("--kb", `${(slideInterval / 1000).toFixed(2)}s`);
+
+    slideIndex = 0;
+    usingA = true;
+    if (slideA) { slideA.classList.remove("is-active"); slideA.removeAttribute("src"); }
+    if (slideB) { slideB.classList.remove("is-active"); slideB.removeAttribute("src"); }
+
+    showPhoto(0);
+    clearInterval(slideTimer);
+    slideTimer = setInterval(() => {
+      slideIndex++;
+      if (slideIndex >= ordered.length) {
+        clearInterval(slideTimer);
+        setTimeout(showFinal, Math.min(1500, slideInterval * 0.5));
+        return;
       }
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
-    update();
+      showPhoto(slideIndex);
+    }, slideInterval);
   }
 
-  /* ---------- 12. progress bar ---------- */
-  function initProgress() {
-    const bar = $("progressBar");
-    if (!bar) return;
-    const update = () => {
-      const h = document.documentElement.scrollHeight - window.innerHeight;
-      const p = h > 0 ? Math.min(1, Math.max(0, window.scrollY / h)) : 0;
-      bar.style.width = `${(p * 100).toFixed(2)}%`;
-    };
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update, { passive: true });
-    update();
+  function showFinal() {
+    clearInterval(slideTimer);
+    stopRang();
+    showStage("final");
+    setTimeout(() => burst(window.innerWidth / 2, window.innerHeight * 0.45, 70), 350);
   }
 
-  /* ---------- 13. particles ---------- */
-  function initCanvas() {
-    const canvas = $("fx");
-    if (!canvas || reduce) return;
-    const ctx = canvas.getContext("2d");
-    let w = 0, h = 0, dpr = 1;
+  /* ============================================================
+     REPLAY
+     ============================================================ */
+  function initReplay() {
+    const btn = $("replayBtn");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      clearInterval(slideTimer);
+      stopRang();
+      stopBirthday();
+      stopRomantic();
+      attempts = 0;
+      resetCake();
+      showDobError("", false);
+      showStage("dob");
+    });
+  }
 
-    const resize = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      w = window.innerWidth;
-      h = window.innerHeight;
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(h * dpr);
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-    resize();
-    window.addEventListener("resize", resize, { passive: true });
+  /* ============================================================
+     PARTICLES
+     ============================================================ */
+  const canvas = $("fx");
+  const ctx2d = canvas ? canvas.getContext("2d") : null;
+  let W = 0, H = 0, DPR = 1;
+  const parts = [];
+  const COLORS = ["#e87a9f", "#c9557f", "#ffd9e8", "#d3ac6f", "#ecd6ae", "#fff4f8"];
 
-    const COLORS = ["#d3ac6f", "#e9cfa4", "#d98a9e", "#b3576f", "#f4ead9"];
-    const parts = [];
+  function resizeCanvas() {
+    if (!canvas) return;
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.floor(W * DPR);
+    canvas.height = Math.floor(H * DPR);
+    canvas.style.width = `${W}px`;
+    canvas.style.height = `${H}px`;
+    ctx2d.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
 
-    function heart(c, x, y, s) {
-      c.save();
-      c.translate(x, y);
-      c.scale(s, s);
-      c.beginPath();
-      c.moveTo(0, 4);
-      c.bezierCurveTo(-10, -4, -12, -12, -5, -12);
-      c.bezierCurveTo(-1, -12, 0, -9, 0, -7);
-      c.bezierCurveTo(0, -9, 1, -12, 5, -12);
-      c.bezierCurveTo(12, -12, 10, -4, 0, 4);
-      c.closePath();
-      c.fill();
-      c.restore();
-    }
+  function heart(c, x, y, s) {
+    c.save();
+    c.translate(x, y);
+    c.scale(s, s);
+    c.beginPath();
+    c.moveTo(0, 4);
+    c.bezierCurveTo(-10, -4, -12, -12, -5, -12);
+    c.bezierCurveTo(-1, -12, 0, -9, 0, -7);
+    c.bezierCurveTo(0, -9, 1, -12, 5, -12);
+    c.bezierCurveTo(12, -12, 10, -4, 0, 4);
+    c.closePath();
+    c.fill();
+    c.restore();
+  }
 
-    function burst(x, y, count) {
-      const n = count || 40;
-      for (let i = 0; i < n; i++) {
-        const a = Math.random() * Math.PI * 2;
-        const sp = 2.2 + Math.random() * 5;
-        parts.push({
-          x, y,
-          vx: Math.cos(a) * sp,
-          vy: Math.sin(a) * sp - 2,
-          rot: Math.random() * 6.28,
-          vr: (Math.random() - 0.5) * 0.24,
-          size: 4 + Math.random() * 6,
-          color: COLORS[i % COLORS.length],
-          life: 0,
-          max: 70 + Math.random() * 45,
-          shape: Math.random() < 0.5 ? "heart" : "spark",
-          grav: 0.1 + Math.random() * 0.06,
-        });
-      }
-    }
-    window.__burst = burst;
-
-    function ambient() {
+  function burst(x, y, count) {
+    if (reduce || !ctx2d) return;
+    const n = count || 40;
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = 2 + Math.random() * 5.5;
       parts.push({
-        x: Math.random() * w,
-        y: h + 24,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: -0.5 - Math.random() * 0.55,
+        x, y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp - 2,
         rot: Math.random() * 6.28,
-        vr: (Math.random() - 0.5) * 0.02,
-        size: 3 + Math.random() * 4,
-        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        vr: (Math.random() - 0.5) * 0.22,
+        size: 4 + Math.random() * 7,
+        color: COLORS[i % COLORS.length],
         life: 0,
-        max: 620,
-        shape: "heart",
-        grav: -0.001,
-        ambient: true,
+        max: 70 + Math.random() * 50,
+        shape: Math.random() < 0.6 ? "heart" : "petal",
+        grav: 0.09 + Math.random() * 0.06,
+        ambient: false
       });
     }
+  }
 
-    let tick = 0;
-    function frame() {
-      ctx.clearRect(0, 0, w, h);
-      if (++tick % 90 === 0 && parts.length < 70) ambient();
+  function ambient() {
+    if (reduce) return;
+    parts.push({
+      x: Math.random() * W,
+      y: H + 26,
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: -0.45 - Math.random() * 0.5,
+      rot: Math.random() * 6.28,
+      vr: (Math.random() - 0.5) * 0.02,
+      size: 4 + Math.random() * 5,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      life: 0,
+      max: 720,
+      shape: "heart",
+      grav: -0.001,
+      ambient: true
+    });
+  }
 
-      for (let i = parts.length - 1; i >= 0; i--) {
-        const p = parts[i];
-        p.life++;
-        p.vy += p.grav;
-        p.vx *= 0.995;
-        p.x += p.vx;
-        p.y += p.vy;
-        p.rot += p.vr;
+  let tick = 0;
+  function frame() {
+    if (!ctx2d) return;
+    ctx2d.clearRect(0, 0, W, H);
+    if (++tick % 100 === 0 && parts.length < 60) ambient();
 
-        if (p.life > p.max || p.y > h + 60) {
-          parts.splice(i, 1);
-          continue;
-        }
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i];
+      p.life++;
+      p.vy += p.grav;
+      p.vx *= 0.996;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vr;
 
-        const fade = p.life > p.max - 30 ? (p.max - p.life) / 30 : 1;
-        ctx.globalAlpha = Math.max(0, Math.min(1, fade)) * (p.ambient ? 0.45 : 0.9);
-        ctx.fillStyle = p.color;
+      if (p.life > p.max || p.y > H + 70) { parts.splice(i, 1); continue; }
 
-        if (p.shape === "heart") {
-          heart(ctx, p.x, p.y, p.size / 8);
-        } else {
-          ctx.save();
-          ctx.translate(p.x, p.y);
-          ctx.rotate(p.rot);
-          ctx.beginPath();
-          ctx.moveTo(0, -p.size);
-          ctx.lineTo(p.size * 0.28, 0);
-          ctx.lineTo(0, p.size);
-          ctx.lineTo(-p.size * 0.28, 0);
-          ctx.closePath();
-          ctx.fill();
-          ctx.restore();
-        }
+      const fade = p.life > p.max - 30 ? (p.max - p.life) / 30 : 1;
+      ctx2d.globalAlpha = Math.max(0, Math.min(1, fade)) * (p.ambient ? 0.42 : 0.92);
+      ctx2d.fillStyle = p.color;
+
+      if (p.shape === "heart") {
+        heart(ctx2d, p.x, p.y, p.size / 8);
+      } else {
+        ctx2d.save();
+        ctx2d.translate(p.x, p.y);
+        ctx2d.rotate(p.rot);
+        ctx2d.beginPath();
+        ctx2d.ellipse(0, 0, p.size, p.size * 0.5, 0, 0, Math.PI * 2);
+        ctx2d.fill();
+        ctx2d.restore();
       }
-      ctx.globalAlpha = 1;
-      requestAnimationFrame(frame);
     }
+    ctx2d.globalAlpha = 1;
     requestAnimationFrame(frame);
   }
 
-  function burstAt(el, count) {
-    if (!el || typeof window.__burst !== "function") return;
-    const r = el.getBoundingClientRect();
-    window.__burst(r.left + r.width / 2, r.top + r.height * 0.35, count);
+  function initCanvas() {
+    if (!canvas || !ctx2d) return;
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas, { passive: true });
+    if (!reduce) requestAnimationFrame(frame);
   }
 
-  /* ---------- boot ---------- */
+  /* ============================================================
+     BOOT
+     ============================================================ */
   function boot() {
-    applyConfig();
-    buildCover();
-    buildEnding();
-    buildIntro();
-    buildChapters();
-    initLightbox();   // define openBirthdayPhoto before reel cards
-    buildReel();
-    initReelDrag();
-    buildReasons();
-    initCake();
-    initLetter();
+    applyTexts();
+    initDob();
     initReveal();
-    initParallax();
-    initProgress();
+    initCake();
+    initReplay();
+    initRang();
+    initSoundToggle();
     initCanvas();
+    showStage("dob");
+
+    // small debug hook (harmless in production)
+    window.__birthday = { showStage, startSlideshow, showFinal, resetCake, scheduleWish };
   }
 
   if (document.readyState === "loading") {

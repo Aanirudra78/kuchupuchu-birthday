@@ -1,70 +1,76 @@
-# 🥀 Kuchupuchu · Birthday
+# 🎀 Kuchupuchu · Birthday Experience
 
-A cinematic, scroll-driven birthday site — dark wine, cream and rose gold,
-film grain, full-bleed photos, first-person Hinglish words. No voice, no audio,
-no build step.
+A one-screen-at-a-time birthday surprise in baby pink. No build step, no
+frameworks — just HTML, CSS and JS.
 
 **Live:** https://aanirudra78.github.io/kuchupuchu-birthday/
 
-## 1. Photos add karo (10–15 best photos)
+## The flow
 
-1. `assets/photos/` mein photos drop karo (jpg / png / webp).
-2. Folder mein terminal khol ke chalao:
+1. **Enter your DOB** — she types 22 · 11 · 2007.
+2. **"Ohh, it's your birthday!"** — "I think I made something for you…"
+3. **Click here** → soft romantic piano fades into a music-box **Happy Birthday**.
+4. **Cake** — big *"Make your wish"*, 19 candles. After 5 seconds it fades and
+   **"Blown the candles"** appears.
+5. **Blown the candles** → flames go out, smoke, confetti.
+6. **Gift for you** → **Rang Jo Lagyo** starts (0:35–1:30, then 2:10–2:50).
+7. **Photos** — all her solo photos first, then both-of-you photos, one every
+   ~3 seconds (timed to the song).
+8. **Final** — full-screen **I LOVE YOU / MY BABY GIRL**, *from Anirudra*.
+
+## Photos
+
+```
+assets/photos/single/   ← her photos  (s01.jpg … s14.jpg)
+assets/photos/double/   ← both of you (d01.jpg … d18.jpg)
+```
+
+After adding/removing photos run:
 
 ```bash
 node list-photos.js
 ```
 
-Ye `photos-data.js` regenerate karta hai. Page refresh — cover, chapters,
-reel aur ending sab automatically bhar jayenge.
+## Words / timings / songs
 
-> Photo order alphabetical/numeric hai (`01.jpg`, `02.jpg` … best).
-> Photos nahi hain to elegant dark placeholders dikhte hain.
+Everything lives in **`config.js`**:
+- `dob`, `age`, `from`
+- `texts` — every line on screen
+- `audio.romantic`, `audio.rang`
+- `audio.rangSegments` — `[[35, 90], [130, 170]]`
+- `audio.rangVolume`, `audio.romanticVolume`
 
-## 2. Words badlo (first person)
-
-Sab kuch **`config.js`** mein hai:
-- `name`, `from`, `dob`, `birthday`, `age`
-- `coverKicker`, `coverLine`
-- `intro.lines` — shuruaat ki baatein
-- `chapters` — scroll wali 5 lines (photos ke saath)
-- `reasons` — 10 lines
-- `wish` — cake section
-- `letter` — poori chitthi
-- `ending` — last screen
-- `captions` + `photoFocus` — photo captions aur face framing
-
-`photoFocus` mein `"center 30%"` type values se portrait photos ka chehra
-frame mein rehta hai.
-
-## 3. Local dekhna
+## Run locally
 
 ```bash
 npx serve .
-# ya seedha index.html double-click
+# or just double-click index.html
 ```
 
-## 4. Online update (GitHub Pages)
+> Audio needs a click to start (browser rule), so the romantic song begins when
+> she presses **Enter** on the DOB screen.
+
+## Deploy (GitHub Pages)
 
 ```bash
 git add .
-git commit -m "photos + new design"
+git commit -m "birthday experience"
 git push
 ```
 
-Pages 1–2 minute mein update ho jaata hai.
-Link: **https://aanirudra78.github.io/kuchupuchu-birthday/**
+Pages updates in 1–2 minutes.
 
-> ⚠️ Free GitHub Pages par repo public hota hai — link jiske paas hai wahi dekh sakta hai.
+> ⚠️ Free GitHub Pages needs a public repo — anyone with the link can open it.
 
 ## Files
 
 | File | Kaam |
 |---|---|
-| `index.html` | structure |
-| `styles.css` | cinematic theme + animations |
-| `script.js` | scroll story, reel, cake, letter, lightbox, particles |
-| `config.js` | 👈 saare words / details |
+| `index.html` | the five stages |
+| `styles.css` | baby-pink theme + animations |
+| `script.js` | DOB gate, audio, cake, slideshow, final |
+| `config.js` | 👈 all words / songs / timings |
 | `photos-data.js` | auto-generated photo list |
-| `list-photos.js` | photos scan → `photos-data.js` |
-| `assets/photos/` | 👈 photos yahan |
+| `list-photos.js` | scans single/ + double/ |
+| `assets/photos/` | optimised photos |
+| `assets/audio/` | romantic.mp3 + rang-jo-lagyo.mp3 |

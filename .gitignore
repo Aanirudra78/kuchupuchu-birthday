@@ -1,3 +1,10 @@
 node_modules/
 .DS_Store
 Thumbs.db
+
+# original photo folders (optimised copies live in assets/photos/)
+/single/
+/double/
+
+# original song download at repo root (the copy in assets/audio/ is used)
+/Rang Jo Lagyo*.mp3
